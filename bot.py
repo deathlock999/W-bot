@@ -111,9 +111,6 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return "Your Flask application is running!"
-
-if __name__ == '__main__':
     while True:
         last_question_index = update_index_file()
         print(last_question_index)
@@ -128,5 +125,8 @@ if __name__ == '__main__':
             send_message(api_token, group_id, correct_answer)              
             time.sleep(1800)     
             print("...one cycle...")
+        return "Your Flask application is running!"
+
+if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
