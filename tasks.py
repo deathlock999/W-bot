@@ -1,6 +1,7 @@
 import os
 from deep_translator import GoogleTranslator
 from gspread import service_account
+import requests
 
 
 api_token = "fGQJvjbzsCUPB7QtImHL8okh7QEPnpzm"
