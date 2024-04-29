@@ -7,7 +7,7 @@ app = Celery('tasks', broker='amqp://localhost')
 
 CELERY_BEAT_SCHEDULE = {
     'process_questions': {
-        'task': 'app.index',  # Replace 'your_app' with your actual module name
+        'task': 'bot.index',  # Replace 'your_app' with your actual module name
         'schedule': crontab(minute='*/60'),  # Runs every 30 minutes
     }
 }
