@@ -1,22 +1,13 @@
 import os
-import requests
-import gspread
 from deep_translator import GoogleTranslator
-from flask import Flask
-from celery import Celery
-from celery.schedules import crontab
+from gspread import service_account
 
-# Celery configuration (adjust broker URL if needed)
-app = Celery('tasks', broker='amqp://localhost')
 
 api_token = "fGQJvjbzsCUPB7QtImHL8okh7QEPnpzm"
 url = "https://gate.whapi.cloud/messages/poll"
 group_id = "120363261013619385@g.us"
 sheet_id = "1ddIhjrBUJaA7Rc0oZTzc4wf1Tn6_ABn-fB8GTZD4YNQ"
 worksheet_name = "Sheet1"
-
-# Flask application initialization
-flask_app = Flask(__name__)
 
 def update_index_file():
   try:
@@ -38,13 +29,11 @@ def update_index_file():
       f.write('0')
       return 0
 
-
 def translate(to_translate):
     translated = GoogleTranslator(source='auto', target='si').translate(to_translate)
     return translated
 
 def get_data_from_sheets(sheet_id, worksheet_name, last_question_index, source_language='en', target_language='si'):
-
     try:
         gc = gspread.service_account(filename="luca-420106-ab9a1b42fc61.json")  # Replace with your credentials file path
         worksheet = gc.open_by_key(sheet_id).worksheet(worksheet_name)
@@ -88,11 +77,11 @@ def get_data_from_sheets(sheet_id, worksheet_name, last_question_index, source_l
 
     except Exception as e:
         print(f"Error retrieving data from Google Sheet: {e}")
-        return None 
+        return None
 
-def send_poll(question,answers):
+def send_poll(question, answers):
     payload = {
-        "to": '120363261013619385@g.us',
+        "to": group_id,
         "options": answers,
         "title": question,
         "count": 1,
@@ -104,75 +93,27 @@ def send_poll(question,answers):
         "authorization": api_token
     }
     response = requests.post(url, json=payload, headers=headers)
-
     print(response.text)
+    time.sleep(60 * 30)
+
 
 def send_message(api_token, group_id, correct_answer):
-    """
-    Sends a message containing the correct answers to the specified WhatsApp group.
-
-    Args:
-        api_token (str): Your WhatsApp API token.
-        group_id (str): ID of the WhatsApp group.
-        correct_ans_set (list): List of correct answers.
-
-    Returns:
-        dict (or None): Response dictionary from the API call, or None if an error occurs.
-    """
-
     base_url = "https://gate.whapi.cloud/"
     endpoint = "messages/text"
-
-    # Build the message dynamically based on the number of correct answers
     message = f"**Correct answer**\n \n✅ {correct_answer}"
-
     headers = {
         "Authorization": f"Bearer {api_token}"
     }
-
     data = {
         "to": group_id,
         "body": message
     }
-
     try:
         response = requests.post(url=f"{base_url}{endpoint}", headers=headers, json=data)
-        response.raise_for_status()  # Raise an exception for non-2xx status codes
-        return response.json()  # Return the JSON response if successful
+        response.raise_for_status()
+        return response.json()
         print("Sent")
+        time.sleep(60 * 30)
     except requests.exceptions.RequestException as error:
         print(f"Error sending message: {error}")
-        return None  # Indicate an error
-
-@flask_app.route('/')
-def index():
-    last_question_index = update_index_file()
-    print(last_question_index)
-    data = get_data_from_sheets(sheet_id, worksheet_name, last_question_index)
-    if data:
-        question = data["question"]
-        answers = data["answers"]
-        correct_answer = data["correct_answer"]
-        send_poll.delay(question, answers)
-        answers.clear()
-        send_message.delay(api_token, group_id, correct_answer)                
-        print("...one cycle...")
-    return "Celery background tasks are running!"
-
-
-# Celery Beat configuration for scheduled tasks
-CELERY_BEAT_SCHEDULE = {
-    'send_poll_task': {
-        'task': 'bot.send_poll',  # Replace with your actual function name
-        'schedule': crontab(minute='*/60'),  # Runs every 60 minutes
-    },
-    'send_message_task': {
-        'task': 'bot.send_message',  # Replace with your actual function name
-        'schedule': crontab(minute='30,60'),  # Runs at minute 0 and 30 of every hour (delays of 0 and 30 minutes)
-    }
-}
-
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    flask_app.run(host='0.0.0.0', port=port)
+        return None
