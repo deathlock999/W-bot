@@ -1,5 +1,6 @@
 from flask import Flask
 from celery import Celery
+from celery.schedules import crontab
 
 # Celery configuration (adjust broker URL if needed)
 app = Celery('tasks', broker='amqp://localhost')
