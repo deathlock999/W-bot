@@ -14,7 +14,7 @@ worksheet_name = "Sheet1"
 
 app = Flask(__name__)
 
-@app.task
+
 def send_poll(question, answers):
     payload = {
         "to": group_id,
@@ -32,7 +32,7 @@ def send_poll(question, answers):
     print(response.text)
     time.sleep(60 * 30)
 
-@app.task
+
 def send_message(api_token, group_id, correct_answer):
     base_url = "https://gate.whapi.cloud/"
     endpoint = "messages/text"
